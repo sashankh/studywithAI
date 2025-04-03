@@ -1,0 +1,39 @@
+name: Deploy Backend to Azure App Service
+
+on:
+  push:
+    branches: [ main ]
+    paths:
+      - 'backend/**'
+      - '.github/workflows/backend-deploy.yml'
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - uses: actions/checkout@v2
+    
+    - name: Set up Docker Buildx
+      uses: docker/setup-buildx-action@v1
+    
+    - name: Login to ACR
+      uses: docker/login-action@v1
+      with:
+        registry: chatmcqacr.azurecr.io
+        username: ${{ secrets.ACR_USERNAME }}
+        password: ${{ secrets.ACR_PASSWORD }}
+    
+    - name: Build and push
+      uses: docker/build-push-action@v2
+      with:
+        context: ./backend
+        push: true
+        tags: chatmcqacr.azurecr.io/chat-mcq-backend:latest
+    
+    - name: Deploy to Azure Web App
+      uses: azure/webapps-deploy@v2
+      with:
+        app-name: 'chat-mcq-backend'
+        publish-profile: ${{ secrets.AZURE_WEBAPP_PUBLISH_PROFILE }}
+        images: 'chatmcqacr.azurecr.io/chat-mcq-backend:latest'

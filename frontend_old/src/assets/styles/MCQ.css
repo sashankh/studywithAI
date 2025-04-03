@@ -1,0 +1,58 @@
+.mcq-question {
+  margin-bottom: 25px;
+  padding: 15px;
+  background-color: rgba(255, 255, 255, 0.05);
+  border-radius: 8px;
+}
+
+.question-text {
+  margin-bottom: 15px;
+}
+
+.question-options {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.option {
+  padding: 10px;
+  border-radius: 5px;
+  transition: background-color 0.2s;
+}
+
+.option:hover {
+  background-color: rgba(255, 255, 255, 0.1);
+}
+
+.option-label {
+  display: flex;
+  align-items: center;
+  cursor: pointer;
+}
+
+.option-label input {
+  margin-right: 10px;
+  cursor: pointer;
+}
+
+.option-text {
+  flex-grow: 1;
+}
+
+.mcq-submit {
+  margin-top: 20px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 15px;
+}
+
+.mcq-progress {
+  font-size: 14px;
+  color: rgba(236, 236, 241, 0.8);
+}
+
+.mcq-submit-button {
+  min-width: 200px;
+}

@@ -1,0 +1,10 @@
+{
+  "platform": "azure",
+  "staticWebAppName": "chat-mcq-frontend",
+  "resourceGroup": "chat-mcq-app-rg",
+  "location": "eastus2",
+  "outputLocation": "dist",
+  "env": {
+    "VITE_API_URL": "https://chat-mcq-backend.azurewebsites.net/api"
+  }
+}

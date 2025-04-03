@@ -1,0 +1,107 @@
+.mcq-result {
+  margin-top: 1.5rem;
+}
+
+.score-summary {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 1.5rem;
+  border-radius: 8px;
+  margin-bottom: 1.5rem;
+  color: white;
+  text-align: center;
+}
+
+.score-summary.excellent {
+  background-color: #4caf50;
+}
+
+.score-summary.good {
+  background-color: #2196f3;
+}
+
+.score-summary.average {
+  background-color: #ff9800;
+}
+
+.score-summary.poor {
+  background-color: #f44336;
+}
+
+.score-display {
+  font-size: 2.5rem;
+  margin-bottom: 0.5rem;
+}
+
+.score {
+  font-weight: bold;
+}
+
+.total {
+  font-size: 1.75rem;
+  opacity: 0.8;
+}
+
+.percentage {
+  font-size: 1.25rem;
+  margin-bottom: 0.5rem;
+}
+
+.score-message {
+  font-size: 1.1rem;
+}
+
+.results-breakdown {
+  margin-top: 1rem;
+}
+
+.results-breakdown h3 {
+  margin-bottom: 1rem;
+}
+
+.result-item {
+  padding: 1rem;
+  margin-bottom: 1rem;
+  border-radius: 4px;
+  border-left: 4px solid;
+}
+
+.result-item.correct {
+  background-color: rgba(76, 175, 80, 0.1);
+  border-left-color: #4caf50;
+}
+
+.result-item.incorrect {
+  background-color: rgba(244, 67, 54, 0.1);
+  border-left-color: #f44336;
+}
+
+.question-text {
+  font-weight: 500;
+  margin-bottom: 0.75rem;
+}
+
+.question-number {
+  font-weight: bold;
+  margin-right: 0.5rem;
+}
+
+.answer-info {
+  margin-bottom: 0.75rem;
+}
+
+.user-answer, .correct-answer {
+  margin-bottom: 0.5rem;
+}
+
+.label {
+  font-weight: 500;
+  margin-right: 0.5rem;
+}
+
+.explanation {
+  font-style: italic;
+  color: #555;
+}

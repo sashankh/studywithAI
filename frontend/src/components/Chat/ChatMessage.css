@@ -1,0 +1,24 @@
+.chat-message {
+  display: flex;
+  margin-bottom: 1rem;
+  padding: 1rem;
+  border-radius: 8px;
+}
+
+.chat-message.user {
+  background-color: #f0f0f0;
+}
+
+.chat-message.assistant {
+  background-color: #f9f9f9;
+}
+
+.avatar {
+  margin-right: 1rem;
+  font-size: 1.5rem;
+}
+
+.message-content {
+  flex: 1;
+  line-height: 1.5;
+}

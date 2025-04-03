@@ -1,0 +1,25 @@
+Create {num_questions} multiple-choice questions about {topic}. 
+
+Each question should have:
+1. A clear question statement
+2. Four options labeled A, B, C, and D
+3. One correct answer
+4. A brief explanation for the correct answer
+
+Format your response as a JSON object with the following structure:
+{{
+  "questions": [
+    {{
+      "question": "Question text here",
+      "options": {{
+        "A": "First option",
+        "B": "Second option",
+        "C": "Third option",
+        "D": "Fourth option"
+      }},
+      "correct_answer": "A/B/C/D",
+      "explanation": "Explanation for why this is correct"
+    }},
+    // Additional questions...
+  ]
+}}

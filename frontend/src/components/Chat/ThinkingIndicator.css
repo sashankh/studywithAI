@@ -1,0 +1,55 @@
+.thinking-indicator {
+  display: flex;
+  align-items: flex-start;
+  padding: 1rem;
+  opacity: 0.7;
+  margin-bottom: 1rem;
+}
+
+.thinking-indicator .avatar {
+  background-color: #f0f0f0;
+  border-radius: 50%;
+  width: 36px;
+  height: 36px;
+  margin-right: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  font-size: 1.2rem;
+}
+
+.thinking-indicator .content {
+  color: #666;
+  font-size: 1rem;
+  display: flex;
+  align-items: center;
+}
+
+.thinking-indicator .dots {
+  display: inline-block;
+  margin-left: 4px;
+}
+
+.thinking-indicator .dot {
+  opacity: 0;
+  animation: dot-blink 1.4s infinite;
+  animation-fill-mode: both;
+}
+
+.thinking-indicator .dot:nth-child(2) {
+  animation-delay: 0.2s;
+}
+
+.thinking-indicator .dot:nth-child(3) {
+  animation-delay: 0.4s;
+}
+
+@keyframes dot-blink {
+  0% { opacity: 0; }
+  20% { opacity: 0; }
+  40% { opacity: 1; }
+  60% { opacity: 1; }
+  80% { opacity: 1; }
+  100% { opacity: 0; }
+}

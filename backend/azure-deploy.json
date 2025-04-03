@@ -1,0 +1,11 @@
+{
+  "platform": "azure",
+  "webAppName": "chat-mcq-backend",
+  "resourceGroup": "chat-mcq-app-rg",
+  "appServicePlan": "chat-mcq-plan",
+  "containerRegistry": "chatmcqacr",
+  "dockerImageName": "chat-mcq-backend:latest",
+  "env": {
+    "WEBSITES_PORT": "8000"
+  }
+}

@@ -1,0 +1,37 @@
+.mcq-question {
+  margin-bottom: 2rem;
+  padding-bottom: 1.5rem;
+  border-bottom: 1px solid #e0e0e0;
+}
+
+.mcq-question:last-child {
+  border-bottom: none;
+}
+
+.question-text {
+  margin-bottom: 1rem;
+  font-size: 1.1rem;
+  font-weight: 500;
+}
+
+.options-container {
+  margin-bottom: 1rem;
+}
+
+.explanation {
+  margin-top: 1rem;
+  padding: 0.75rem;
+  background-color: #f5f5f5;
+  border-radius: 4px;
+}
+
+.explanation h4 {
+  margin-top: 0;
+  margin-bottom: 0.5rem;
+  color: #333;
+}
+
+.explanation p {
+  margin: 0;
+  color: #555;
+}
