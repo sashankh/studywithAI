@@ -17,11 +17,6 @@ const MCQResult: React.FC<MCQResultProps> = ({ evaluation }) => {
     return 'poor';
   };
 
-  // Check if a result has valid answer text
-  const hasValidAnswerText = (text: string | undefined): boolean => {
-    return text !== undefined && text.trim() !== '';
-  };
-
   return (
     <div className="mcq-result">
       <div className={`score-summary ${getScoreCategory()}`}>
@@ -40,41 +35,40 @@ const MCQResult: React.FC<MCQResultProps> = ({ evaluation }) => {
       
       <div className="results-breakdown">
         <h3>Question Breakdown</h3>
-        {results.map((result, index) => (
-          <div 
-            key={index} 
-            className={`result-item ${result.isCorrect ? 'correct' : 'incorrect'}`}
-          >
-            <div className="question-text">
-              <span className="question-number">Q{index + 1}:</span> {result.question}
-            </div>
-            <div className="answer-info">
-              <div className="user-answer">
-                <span className="label">Your answer:</span> 
-                {hasValidAnswerText(result.userAnswer) ? (
-                  <span className="answer-text">{result.userAnswer}</span>
-                ) : (
-                  <span className="answer-text no-answer">(No answer provided)</span>
+        {results.map((result, index) => {
+          // Transform answer IDs to the actual text values
+          // For example, if answer is "a", convert to the actual option text
+          const userAnswerText = result.userAnswer;
+          const correctAnswerText = result.correctAnswer;
+          
+          return (
+            <div 
+              key={index} 
+              className={`result-item ${result.isCorrect ? 'correct' : 'incorrect'}`}
+            >
+              <div className="question-text">
+                <span className="question-number">Q{index + 1}:</span> {result.question}
+              </div>
+              <div className="answer-info">
+                <div className="user-answer">
+                  <span className="label">Your answer:</span> 
+                  <span className="answer-text">{userAnswerText}</span>
+                </div>
+                {!result.isCorrect && (
+                  <div className="correct-answer">
+                    <span className="label">Correct answer:</span> 
+                    <span className="answer-text">{correctAnswerText}</span>
+                  </div>
                 )}
               </div>
-              {!result.isCorrect && (
-                <div className="correct-answer">
-                  <span className="label">Correct answer:</span> 
-                  {hasValidAnswerText(result.correctAnswer) ? (
-                    <span className="answer-text">{result.correctAnswer}</span>
-                  ) : (
-                    <span className="answer-text no-answer">(No correct answer provided)</span>
-                  )}
+              {result.explanation && (
+                <div className="explanation">
+                  <span className="label">Explanation:</span> {result.explanation}
                 </div>
               )}
             </div>
-            {result.explanation && (
-              <div className="explanation">
-                <span className="label">Explanation:</span> {result.explanation}
-              </div>
-            )}
-          </div>
-        ))}
+          );
+        })}
       </div>
     </div>
   );

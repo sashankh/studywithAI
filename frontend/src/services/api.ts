@@ -74,12 +74,29 @@ export async function submitMCQAnswers(submissions: MCQSubmission[]): Promise<MC
       };
     });
     
-    // Extract just the selected option IDs
+    // Extract selected option IDs and create a mapping of option IDs to their text values
     const answers = submissions.map(s => s.selectedOptionId);
+    
+    // Create a mapping to help translate option IDs back to text values
+    const optionMappings = submissions.map(submission => {
+      const optionTextMap: Record<string, string> = {};
+      submission.question.options.forEach(option => {
+        optionTextMap[option.id] = option.text;
+      });
+      
+      return {
+        questionId: submission.questionId,
+        selectedOptionId: submission.selectedOptionId,
+        selectedOptionText: optionTextMap[submission.selectedOptionId] || "Unknown option",
+        correctOptionId: submission.question.correctAnswerId,
+        correctOptionText: optionTextMap[submission.question.correctAnswerId || ""] || "Unknown option"
+      };
+    });
     
     console.log(`Submitting MCQ answers to ${API_URL}/mcq/evaluate:`, {
       questions: formattedQuestions,
-      answers
+      answers,
+      optionMappings
     });
     
     const response = await fetch(`${API_URL}/mcq/evaluate`, {
@@ -89,7 +106,8 @@ export async function submitMCQAnswers(submissions: MCQSubmission[]): Promise<MC
       },
       body: JSON.stringify({ 
         questions: formattedQuestions, 
-        answers 
+        answers,
+        optionMappings
       }),
     });
     
@@ -100,6 +118,38 @@ export async function submitMCQAnswers(submissions: MCQSubmission[]): Promise<MC
     
     const data = await response.json();
     console.log('Received evaluation:', data);
+    
+    // Transform option IDs to text in the results if needed
+    if (data.results) {
+      data.results = data.results.map((result: any, index: number) => {
+        // If userAnswer or correctAnswer are just IDs, replace with the text values
+        if (optionMappings[index]) {
+          const mapping = optionMappings[index];
+          
+          if (!result.userAnswer || result.userAnswer.length <= 2) {
+            result.userAnswer = mapping.selectedOptionText;
+          }
+          
+          if (!result.correctAnswer || result.correctAnswer.length <= 2) {
+            result.correctAnswer = mapping.correctOptionText;
+          }
+        }
+        
+        // Fix property naming issue - ensure isCorrect is properly set
+        // Backend might be using is_correct (snake_case) while frontend expects isCorrect (camelCase)
+        if (result.is_correct !== undefined && result.isCorrect === undefined) {
+          result.isCorrect = result.is_correct;
+        }
+        
+        // Double check the boolean value to ensure it's actually a boolean
+        if (typeof result.isCorrect === 'string') {
+          result.isCorrect = result.isCorrect.toLowerCase() === 'true';
+        }
+        
+        return result;
+      });
+    }
+    
     return data;
   } catch (error) {
     console.error('Error submitting MCQ answers:', error);
