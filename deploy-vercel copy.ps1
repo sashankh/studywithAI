@@ -1,12 +1,12 @@
 #!/usr/bin/env pwsh
-# Vercel deployment script for Chat MCQ App
+# Vercel deployment script for StudyBuddy App
 
 # Read configuration files
 $backendConfig = Get-Content -Path "./backend/vercel-deploy.json" | ConvertFrom-Json
 $frontendConfig = Get-Content -Path "./frontend/vercel-deploy.json" | ConvertFrom-Json
 
 Write-Host "=== Starting Vercel Deployment ==="
-Write-Host "This script will deploy the Chat MCQ app to Vercel."
+Write-Host "This script will deploy the StudyBuddy app to Vercel."
 
 # Run backend Python application
 Write-Host "Starting backend Python application..."

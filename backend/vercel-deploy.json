@@ -1,6 +1,6 @@
 {
   "platform": "vercel",
-  "projectName": "chat-mcq-app-backend",
+  "projectName": "studybuddy-backend",
   "framework": "fastapi",
   "outputDirectory": ".",
   "env": {
@@ -8,6 +8,6 @@
     "AZURE_OPENAI_API_BASE": "https://agent42gpt.openai.azure.com/",
     "AZURE_OPENAI_API_VERSION": "2024-12-01-preview",
     "AZURE_OPENAI_DEPLOYMENT_NAME": "gpt4o",
-    "FRONTEND_URL": "https://chat-mcq-app.vercel.app"
+    "FRONTEND_URL": "https://studybuddy.vercel.app"
   }
 }
