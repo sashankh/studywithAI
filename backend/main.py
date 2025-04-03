@@ -42,13 +42,14 @@ app.add_middleware(
         frontend_url, 
         "https://chat-mcq-frontend.azurestaticapps.net", 
         "https://chat-mcq-app.vercel.app",
-        "https://chat-mcq-app-*.vercel.app",  # Allow Vercel preview deployments
-        "https://studybuddy-wine.vercel.app",  # Add specific production frontend URL
-        "http://localhost:5173"  # Explicitly add local frontend
+        "https://studybuddy-wine.vercel.app",
+        "http://localhost:5173",  # Explicitly add local frontend
+        "*"  # Add wildcard to allow all origins
     ],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
+    allow_origin_regex=r"https://studybuddy-.*-sais-projects-fe74e6b2\.vercel\.app$|https://studybuddy-wine\.vercel\.app$",
 )
 
 # Global exception handler
