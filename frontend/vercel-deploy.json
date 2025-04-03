@@ -1,0 +1,10 @@
+{
+  "platform": "vercel",
+  "projectName": "chat-mcq-app",
+  "framework": "vite",
+  "buildCommand": "npm run build",
+  "outputDirectory": "dist",
+  "env": {
+    "VITE_API_URL": "https://chat-mcq-app-backend.vercel.app/api"
+  }
+}

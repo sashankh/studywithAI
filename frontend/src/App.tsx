@@ -125,6 +125,7 @@ const App: React.FC = () => {
   const handleSendMessage = async (content: string) => {
     if (!content.trim()) return;
 
+    // Set loading state to true immediately
     setIsLoading(true);
 
     const userMessage: Message = {
@@ -134,62 +135,66 @@ const App: React.FC = () => {
       timestamp: new Date(),
     };
 
-    const updatedSessions = sessions.map(session => {
-      if (session.id === currentSessionId) {
-        return {
-          ...session,
-          messages: [
-            ...session.messages,
-            userMessage,
-          ],
-        };
-      }
-      return session;
-    });
-
-    setSessions(updatedSessions);
+    // Update sessions with the user message immediately
+    setSessions(prevSessions => 
+      prevSessions.map(session => {
+        if (session.id === currentSessionId) {
+          return {
+            ...session,
+            messages: [
+              ...session.messages,
+              userMessage,
+            ],
+          };
+        }
+        return session;
+      })
+    );
 
     try {
       if (isMCQRequest(content)) {
         const topic = extractTopicFromMCQRequest(content);
         
-        const assistantMessage: MCQMessage = {
-          id: uuidv4(),
-          role: 'assistant',
-          content: `Here are some multiple choice questions on ${topic}:`,
-          timestamp: new Date(),
-        };
-
         try {
+          // Request MCQs from the API
           const mcqResponse = await requestMCQs(topic);
           console.log('Raw MCQ response:', mcqResponse);
           
           const formattedQuiz = transformMCQData(mcqResponse);
           
-          assistantMessage.mcqQuiz = formattedQuiz;
+          // Create assistant message with MCQ data
+          const assistantMessage: MCQMessage = {
+            id: uuidv4(),
+            role: 'assistant',
+            content: `Here are some multiple choice questions on ${topic}:`,
+            timestamp: new Date(),
+            mcqQuiz: formattedQuiz
+          };
           
-          const updatedSessionsWithMCQ = sessions.map(session => {
-            if (session.id === currentSessionId) {
-              return {
-                ...session,
-                messages: [
-                  ...session.messages,
-                  userMessage,
-                  assistantMessage
-                ],
-              };
-            }
-            return session;
-          });
-          
-          setSessions(updatedSessionsWithMCQ);
+          // Update sessions with assistant response
+          setSessions(prevSessions => 
+            prevSessions.map(session => {
+              if (session.id === currentSessionId) {
+                return {
+                  ...session,
+                  messages: [
+                    ...session.messages,
+                    assistantMessage
+                  ],
+                };
+              }
+              return session;
+            })
+          );
         } catch (error) {
           console.error('Error processing MCQs:', error);
           throw error;
         }
       } else {
+        // Send message to the API and get a response
         const response = await sendMessage(content);
 
+        // Create a response message
         const assistantMessage: Message = {
           id: uuidv4(),
           role: 'assistant',
@@ -197,25 +202,26 @@ const App: React.FC = () => {
           timestamp: new Date(),
         };
 
-        const updatedSessionsWithResponse = sessions.map(session => {
-          if (session.id === currentSessionId) {
-            return {
-              ...session,
-              messages: [
-                ...session.messages,
-                userMessage,
-                assistantMessage
-              ],
-            };
-          }
-          return session;
-        });
-
-        setSessions(updatedSessionsWithResponse);
+        // Update sessions with assistant response
+        setSessions(prevSessions => 
+          prevSessions.map(session => {
+            if (session.id === currentSessionId) {
+              return {
+                ...session,
+                messages: [
+                  ...session.messages,
+                  assistantMessage
+                ],
+              };
+            }
+            return session;
+          })
+        );
       }
     } catch (error) {
       console.error('Error sending message:', error);
       
+      // Add an error message
       const errorMessage: Message = {
         id: uuidv4(),
         role: 'assistant',
@@ -223,22 +229,23 @@ const App: React.FC = () => {
         timestamp: new Date(),
       };
 
-      const updatedSessionsWithError = sessions.map(session => {
-        if (session.id === currentSessionId) {
-          return {
-            ...session,
-            messages: [
-              ...session.messages,
-              userMessage,
-              errorMessage
-            ],
-          };
-        }
-        return session;
-      });
-
-      setSessions(updatedSessionsWithError);
+      // Update sessions with error message
+      setSessions(prevSessions => 
+        prevSessions.map(session => {
+          if (session.id === currentSessionId) {
+            return {
+              ...session,
+              messages: [
+                ...session.messages,
+                errorMessage
+              ],
+            };
+          }
+          return session;
+        })
+      );
     } finally {
+      // Set loading state to false after everything is done
       setIsLoading(false);
     }
   };
