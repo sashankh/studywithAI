@@ -18,33 +18,51 @@ class LLMService:
         # Ensure the API base has a URL scheme and no trailing slash
         api_base = settings.AZURE_OPENAI_API_BASE
         if api_base:
-            # Remove trailing slash if present
-            api_base = api_base.rstrip('/')
-            
-            # Ensure it has a proper URL scheme
-            if not api_base.startswith(('http://', 'https://')):
-                api_base = f"https://{api_base}"
+            try:
+                # Sanitize the URL to remove any invalid or non-printable characters
+                # Remove any whitespace and control characters
+                api_base = ''.join(c for c in api_base if c.isprintable() and not c.isspace())
                 
-            logger.info(f"Using API base URL: {api_base}")
+                # Remove trailing slash if present
+                api_base = api_base.rstrip('/')
+                
+                # Ensure it has a proper URL scheme
+                if not api_base.startswith(('http://', 'https://')):
+                    api_base = f"https://{api_base}"
+                    
+                # Additional validation - make sure it's ASCII-only to avoid encoding issues
+                api_base = api_base.encode('ascii', errors='ignore').decode('ascii')
+                    
+                logger.info(f"Using API base URL: {api_base}")
+            except Exception as e:
+                logger.error(f"Error sanitizing API base URL: {str(e)}")
+                logger.error(traceback.format_exc())
+                raise ValueError(f"Invalid Azure OpenAI API Base URL: {api_base}")
         else:
             logger.error("AZURE_OPENAI_API_BASE environment variable is not set!")
+            raise ValueError("AZURE_OPENAI_API_BASE environment variable is not set")
         
-        # Initialize the Azure OpenAI client
-        self.client = AzureOpenAI(
-            api_key=settings.AZURE_OPENAI_API_KEY,
-            api_version=settings.AZURE_OPENAI_API_VERSION,
-            azure_endpoint=api_base
-        )
-        
-        self.deployment_name = settings.AZURE_OPENAI_DEPLOYMENT_NAME
-        
-        # Log API configuration
-        logger.info(f"API version: {settings.AZURE_OPENAI_API_VERSION}")
-        logger.info(f"Deployment name: {self.deployment_name}")
-        
-        # Check if API key is set
-        if not settings.AZURE_OPENAI_API_KEY:
-            logger.warning("AZURE_OPENAI_API_KEY is not set!")
+        try:
+            # Initialize the Azure OpenAI client
+            self.client = AzureOpenAI(
+                api_key=settings.AZURE_OPENAI_API_KEY,
+                api_version=settings.AZURE_OPENAI_API_VERSION,
+                azure_endpoint=api_base
+            )
+            
+            self.deployment_name = settings.AZURE_OPENAI_DEPLOYMENT_NAME
+            
+            # Log API configuration
+            logger.info(f"API version: {settings.AZURE_OPENAI_API_VERSION}")
+            logger.info(f"Deployment name: {self.deployment_name}")
+            
+            # Check if API key is set
+            if not settings.AZURE_OPENAI_API_KEY:
+                logger.warning("AZURE_OPENAI_API_KEY is not set!")
+        except Exception as e:
+            logger.error(f"Error initializing Azure OpenAI client: {str(e)}")
+            logger.error(traceback.format_exc())
+            raise
         
     async def detect_mcq_intent(self, user_query: str) -> Dict[str, Any]:
         """Detect if the user is asking for MCQs and extract the topic"""

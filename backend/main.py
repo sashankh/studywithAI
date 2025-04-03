@@ -8,8 +8,15 @@ import uvicorn
 import os
 from pathlib import Path
 
+# Determine logs directory: use /tmp/logs if it exists, otherwise use logs
+tmp_logs_dir = Path("/tmp/logs")
+if tmp_logs_dir.exists() or Path("/tmp").exists():
+    logs_dir = tmp_logs_dir
+else:
+    # Fall back to logs directory in the current path
+    logs_dir = Path("logs")
+    
 # Create logs directory if it doesn't exist
-logs_dir = Path("/tmp/logs")
 logs_dir.mkdir(exist_ok=True)
 
 # Configure logging
