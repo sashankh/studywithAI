@@ -17,7 +17,8 @@ const App: React.FC = () => {
   const [sessions, setSessions] = useState<ChatSession[]>([]);
   const [currentSessionId, setCurrentSessionId] = useState<string>('');
   const [isLoading, setIsLoading] = useState<boolean>(false);
-  const [error, setError] = useState<string | null>(null);
+  // Using setError but not error directly to avoid TS error
+  const [, setError] = useState<string | null>(null);
 
   // Initialize with a default session
   useEffect(() => {
@@ -198,7 +199,7 @@ const App: React.FC = () => {
         const assistantMessage: Message = {
           id: uuidv4(),
           role: 'assistant',
-          content: response.message || response.content || "I'm not sure how to respond to that.",
+          content: response.content || "I'm not sure how to respond to that.",
           timestamp: new Date(),
         };
 

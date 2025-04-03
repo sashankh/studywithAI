@@ -6,4 +6,4 @@ python-dotenv==1.0.0
 openai==0.28.1
 pytest==7.4.0
 httpx==0.25.0
-pyyaml==6.0
+pyyaml==5.3.1

@@ -111,13 +111,21 @@ if ($backendConfig.env) {
         $key = $prop.Name
         $value = $prop.Value
         Write-Host "  Setting $key"
-        vercel env add $key production "$value" --yes
+        # Check if the environment variable already exists
+        $envExists = vercel env ls | Select-String -Pattern "^$key" -Quiet
+        if ($envExists) {
+            Write-Host "    Variable $key already exists, skipping..." -ForegroundColor Yellow
+        } else {
+            # Use echo to pipe the value to vercel env add command
+            $value | vercel env add $key production
+        }
     }
 }
 
 # Deploy the backend with validated project name
 Write-Host "Executing backend deployment..."
-$backendDeployOutput = vercel --prod --name $projectName
+# Use --cwd . to ensure we're deploying the current directory, not the env subdirectory
+$backendDeployOutput = vercel --cwd . --prod --name $projectName
 $backendDeployment = $backendDeployOutput -join "`n"
 
 if ($LASTEXITCODE -eq 0) {
@@ -163,7 +171,14 @@ if ($frontendConfig.env) {
             $value = $prop.Value
         }
         Write-Host "  Setting $key"
-        vercel env add $key production "$value" --yes
+        # Check if the environment variable already exists
+        $envExists = vercel env ls | Select-String -Pattern "^$key" -Quiet
+        if ($envExists) {
+            Write-Host "    Variable $key already exists, skipping..." -ForegroundColor Yellow
+        } else {
+            # Use echo to pipe the value to vercel env add command
+            $value | vercel env add $key production
+        }
     }
 }
 
@@ -183,7 +198,8 @@ if ($LASTEXITCODE -ne 0) {
 
 # Deploy the frontend with validated project name
 Write-Host "Executing frontend deployment..."
-$frontendDeployOutput = vercel --prod --name $projectName
+# Use --cwd . to ensure we're deploying the current directory, not the env subdirectory
+$frontendDeployOutput = vercel --cwd . --prod --name $projectName
 $frontendDeployment = $frontendDeployOutput -join "`n"
 
 if ($LASTEXITCODE -eq 0) {

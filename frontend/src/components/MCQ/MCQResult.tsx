@@ -45,11 +45,11 @@ const MCQResult: React.FC<MCQResultProps> = ({ evaluation }) => {
             </div>
             <div className="answer-info">
               <div className="user-answer">
-                <span className="label">Your answer:</span> {result.userAnswer}
+                <span className="label">Your answer:</span> <span className="answer-text">{result.userAnswer}</span>
               </div>
               {!result.isCorrect && (
                 <div className="correct-answer">
-                  <span className="label">Correct answer:</span> {result.correctAnswer}
+                  <span className="label">Correct answer:</span> <span className="answer-text">{result.correctAnswer}</span>
                 </div>
               )}
             </div>

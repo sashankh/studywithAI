@@ -1,7 +1,72 @@
 .layout {
   display: flex;
+  flex-direction: column;
   height: 100vh;
   width: 100%;
+}
+
+.app-header {
+  display: flex;
+  align-items: center;
+  padding: 1rem 2rem;
+  background-color: #ffffff;
+  border-bottom: 1px solid #e0e0e0;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+  position: relative;
+}
+
+.title-container {
+  position: absolute;
+  width: 100%;
+  text-align: center;
+  left: 0;
+  z-index: 1;
+}
+
+.app-title {
+  font-size: 1.75rem;
+  color: #333;
+  margin: 0;
+  font-weight: 700;
+}
+
+.nav-links {
+  display: flex;
+  gap: 1.5rem;
+  align-items: center;
+  margin-left: auto;
+  position: relative;
+  z-index: 2;
+}
+
+.nav-link {
+  text-decoration: none;
+  color: #555;
+  font-weight: 500;
+  transition: color 0.2s;
+}
+
+.nav-link:hover {
+  color: #4f46e5;
+}
+
+.nav-link.sign-up {
+  background-color: #4f46e5;
+  color: white;
+  padding: 0.5rem 1rem;
+  border-radius: 4px;
+  transition: background-color 0.2s;
+}
+
+.nav-link.sign-up:hover {
+  background-color: #3c35b5;
+  color: white;
+}
+
+.content-wrapper {
+  display: flex;
+  flex: 1;
+  overflow: hidden;
 }
 
 .sidebar {
