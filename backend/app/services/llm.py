@@ -3,7 +3,7 @@ import json
 import yaml
 import re
 from typing import List, Dict, Any, Optional
-import openai
+from openai import AzureOpenAI
 import logging
 import traceback
 from app.utils.prompt_loader import load_prompt
@@ -14,8 +14,6 @@ logger = logging.getLogger(__name__)
 class LLMService:
     def __init__(self):
         logger.debug("Initializing LLM Service")
-        openai.api_type = "azure"
-        openai.api_key = settings.AZURE_OPENAI_API_KEY
         
         # Ensure the API base has a URL scheme and no trailing slash
         api_base = settings.AZURE_OPENAI_API_BASE
@@ -27,16 +25,21 @@ class LLMService:
             if not api_base.startswith(('http://', 'https://')):
                 api_base = f"https://{api_base}"
                 
-            openai.api_base = api_base
             logger.info(f"Using API base URL: {api_base}")
         else:
             logger.error("AZURE_OPENAI_API_BASE environment variable is not set!")
-            
-        openai.api_version = settings.AZURE_OPENAI_API_VERSION
+        
+        # Initialize the Azure OpenAI client
+        self.client = AzureOpenAI(
+            api_key=settings.AZURE_OPENAI_API_KEY,
+            api_version=settings.AZURE_OPENAI_API_VERSION,
+            azure_endpoint=api_base
+        )
+        
         self.deployment_name = settings.AZURE_OPENAI_DEPLOYMENT_NAME
         
         # Log API configuration
-        logger.info(f"API version: {openai.api_version}")
+        logger.info(f"API version: {settings.AZURE_OPENAI_API_VERSION}")
         logger.info(f"Deployment name: {self.deployment_name}")
         
         # Check if API key is set
@@ -53,8 +56,8 @@ class LLMService:
             user_prompt = load_prompt("detect_mcq_intent/prompt.txt").format(user_query=user_query)
             
             logger.debug("Calling Azure OpenAI API for MCQ intent detection")
-            response = openai.ChatCompletion.create(
-                engine=self.deployment_name,
+            response = self.client.chat.completions.create(
+                model=self.deployment_name,
                 messages=[
                     {"role": "system", "content": system_prompt},
                     {"role": "user", "content": user_prompt}
@@ -162,8 +165,8 @@ class LLMService:
             user_prompt = load_prompt("simple_request/prompt.txt").format(user_query=user_query)
             
             logger.debug("Calling Azure OpenAI API")
-            response = openai.ChatCompletion.create(
-                engine=self.deployment_name,
+            response = self.client.chat.completions.create(
+                model=self.deployment_name,
                 messages=[
                     {"role": "system", "content": system_prompt},
                     {"role": "user", "content": user_prompt}
@@ -198,8 +201,8 @@ class LLMService:
             logger.debug(f"User prompt (first 50 chars): {user_prompt[:50]}...")
             
             logger.debug("Calling Azure OpenAI API for MCQ generation")
-            response = openai.ChatCompletion.create(
-                engine=self.deployment_name,
+            response = self.client.chat.completions.create(
+                model=self.deployment_name,
                 messages=[
                     {"role": "system", "content": system_prompt},
                     {"role": "user", "content": user_prompt}

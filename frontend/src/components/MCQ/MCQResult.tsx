@@ -17,6 +17,11 @@ const MCQResult: React.FC<MCQResultProps> = ({ evaluation }) => {
     return 'poor';
   };
 
+  // Check if a result has valid answer text
+  const hasValidAnswerText = (text: string | undefined): boolean => {
+    return text !== undefined && text.trim() !== '';
+  };
+
   return (
     <div className="mcq-result">
       <div className={`score-summary ${getScoreCategory()}`}>
@@ -45,11 +50,21 @@ const MCQResult: React.FC<MCQResultProps> = ({ evaluation }) => {
             </div>
             <div className="answer-info">
               <div className="user-answer">
-                <span className="label">Your answer:</span> <span className="answer-text">{result.userAnswer}</span>
+                <span className="label">Your answer:</span> 
+                {hasValidAnswerText(result.userAnswer) ? (
+                  <span className="answer-text">{result.userAnswer}</span>
+                ) : (
+                  <span className="answer-text no-answer">(No answer provided)</span>
+                )}
               </div>
               {!result.isCorrect && (
                 <div className="correct-answer">
-                  <span className="label">Correct answer:</span> <span className="answer-text">{result.correctAnswer}</span>
+                  <span className="label">Correct answer:</span> 
+                  {hasValidAnswerText(result.correctAnswer) ? (
+                    <span className="answer-text">{result.correctAnswer}</span>
+                  ) : (
+                    <span className="answer-text no-answer">(No correct answer provided)</span>
+                  )}
                 </div>
               )}
             </div>
