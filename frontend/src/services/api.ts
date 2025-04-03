@@ -1,6 +1,8 @@
 import { Message, MCQQuiz, MCQEvaluation, MCQSubmission } from '../types';
 
-const API_URL = '/api'; // Update with your actual API URL if needed
+// Use environment variable if available, otherwise fall back to relative path
+const API_URL = import.meta.env.VITE_API_URL || '/api';
+console.log('Using API URL:', API_URL);
 
 export async function sendMessage(message: string): Promise<Message> {
   try {

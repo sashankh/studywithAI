@@ -43,6 +43,7 @@ app.add_middleware(
         "https://chat-mcq-frontend.azurestaticapps.net", 
         "https://chat-mcq-app.vercel.app",
         "https://chat-mcq-app-*.vercel.app",  # Allow Vercel preview deployments
+        "https://studybuddy-wine.vercel.app",  # Add specific production frontend URL
         "http://localhost:5173"  # Explicitly add local frontend
     ],
     allow_credentials=True,
