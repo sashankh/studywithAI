@@ -1,7 +1,33 @@
 import { Message, MCQQuiz, MCQEvaluation, MCQSubmission } from '../types';
 
-// Use environment variable if available, otherwise fall back to relative path
-const API_URL = import.meta.env.VITE_API_URL || '/api';
+// Dynamic backend URL resolution
+const determineApiUrl = () => {
+  // For local development, use relative path to local backend
+  if (window.location.hostname === 'localhost') {
+    console.log('Using local backend API');
+    return '/api';
+  }
+  
+  // Check for build-time environment variable (for production)
+  if (import.meta.env.VITE_API_URL) {
+    // Use the build-time URL and update localStorage to match
+    const buildTimeUrl = import.meta.env.VITE_API_URL;
+    localStorage.setItem('backendApiUrl', buildTimeUrl);
+    return buildTimeUrl;
+  }
+  
+  // Get the latest deployed backend URL from localStorage if it exists
+  const savedBackendUrl = localStorage.getItem('backendApiUrl');
+  if (savedBackendUrl) {
+    return savedBackendUrl;
+  }
+  
+  // Fallback to a default path
+  return '/api';
+};
+
+// Use dynamic API URL resolution
+const API_URL = determineApiUrl();
 console.log('Using API URL:', API_URL);
 
 export async function sendMessage(message: string): Promise<Message> {

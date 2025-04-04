@@ -1,4 +1,5 @@
 from fastapi import APIRouter, HTTPException
+from fastapi.responses import JSONResponse
 from app.models.chat import ChatRequest, ChatResponse
 from app.services.llm import llm_service
 import logging
@@ -38,12 +39,15 @@ async def process_chat(request: ChatRequest):
             )
             
             # This will be handled by the mcq router, return a message to redirect
-            return ChatResponse(
+            response_data = ChatResponse(
                 message=f"I'll generate some MCQs for you on {topic}.",
                 message_type="text",
                 requires_mcq=True,
                 mcq_topic=topic
             )
+            
+            # Return with explicit CORS headers
+            return create_cors_response(response_data.dict())
         
         # For regular chat messages
         logger.debug("Processing regular chat message")
@@ -51,11 +55,16 @@ async def process_chat(request: ChatRequest):
             logger.debug("Calling LLM service to generate response")
             response = await llm_service.generate_response(user_query)
             logger.debug(f"LLM response received: {response[:50]}...")  # Log first 50 chars
-            return ChatResponse(
+            
+            response_data = ChatResponse(
                 message=response,
                 message_type="text",
                 requires_mcq=False
             )
+            
+            # Return with explicit CORS headers
+            return create_cors_response(response_data.dict())
+            
         except Exception as e:
             logger.error(f"Error in LLM service: {str(e)}")
             logger.error(traceback.format_exc())
@@ -64,3 +73,20 @@ async def process_chat(request: ChatRequest):
         logger.error(f"Unhandled error in process_chat: {str(e)}")
         logger.error(traceback.format_exc())
         raise HTTPException(status_code=500, detail=f"Error processing chat request: {str(e)}")
+
+# Helper function to create a response with CORS headers
+def create_cors_response(content):
+    response = JSONResponse(content=content)
+    response.headers["Access-Control-Allow-Origin"] = "*"
+    response.headers["Access-Control-Allow-Methods"] = "POST, GET, OPTIONS"
+    response.headers["Access-Control-Allow-Headers"] = "Content-Type, Authorization"
+    return response
+
+# Add OPTIONS handler for CORS preflight requests
+@router.options("/chat")
+async def options_chat():
+    response = JSONResponse(content={})
+    response.headers["Access-Control-Allow-Origin"] = "*"
+    response.headers["Access-Control-Allow-Methods"] = "POST, GET, OPTIONS"
+    response.headers["Access-Control-Allow-Headers"] = "Content-Type, Authorization"
+    return response

@@ -1,5 +1,6 @@
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
+from starlette.middleware.cors import CORSMiddleware as StarletteCORSMiddleware
 from fastapi.responses import JSONResponse
 import logging
 import traceback
@@ -35,22 +36,29 @@ app = FastAPI()
 # Get frontend URL from environment or use default for local development
 frontend_url = os.environ.get("FRONTEND_URL", "http://localhost:5173")
 
-# Add CORS middleware to allow frontend requests from various environments
+# Remove any existing CORS middleware first (to avoid duplicates)
+try:
+    app.middleware_stack.middlewares = [
+        m for m in app.middleware_stack.middlewares 
+        if not isinstance(m, StarletteCORSMiddleware)
+    ]
+    logger.info("Removed existing CORS middleware")
+except Exception as e:
+    logger.warning(f"Could not remove existing CORS middleware: {str(e)}")
+
+# Add CORS middleware with proper configuration
 app.add_middleware(
     CORSMiddleware,
     allow_origins=[
-        frontend_url, 
-        "https://chat-mcq-frontend.azurestaticapps.net", 
-        "https://chat-mcq-app.vercel.app",
-        "https://studybuddy-wine.vercel.app",
-        "http://localhost:5173",  # Explicitly add local frontend
-        "*"  # Add wildcard to allow all origins
+        "*",  # Allow all origins 
+        "http://localhost:5173",  # Explicitly allow local frontend development server
+        "http://127.0.0.1:5173"   # Also allow access via IP address
     ],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
-    allow_origin_regex=r"https://studybuddy-.*-sais-projects-fe74e6b2\.vercel\.app$|https://studybuddy-wine\.vercel\.app$",
 )
+logger.info("Added CORS middleware with wildcard origin and localhost development server")
 
 # Global exception handler
 @app.middleware("http")
@@ -71,6 +79,11 @@ async def global_exception_middleware(request: Request, call_next):
 # Include the routers
 app.include_router(chat.router, prefix="/api")
 app.include_router(mcq.router, prefix="/api")
+
+# Add OPTIONS route handler for CORS preflight requests
+@app.options("/{rest_of_path:path}")
+async def options_route(rest_of_path: str):
+    return {}  # Return empty response with 200 OK
 
 @app.get("/")
 def read_root():

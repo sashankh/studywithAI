@@ -3,11 +3,14 @@ import json
 import yaml
 import re
 from typing import List, Dict, Any, Optional
-from openai import AzureOpenAI
 import logging
 import traceback
 from app.utils.prompt_loader import load_prompt
 from app.core.config import settings
+from dotenv import load_dotenv
+
+# Load environment variables from .env file if it exists
+load_dotenv()
 
 logger = logging.getLogger(__name__)
 
@@ -15,55 +18,99 @@ class LLMService:
     def __init__(self):
         logger.debug("Initializing LLM Service")
         
-        # Ensure the API base has a URL scheme and no trailing slash
-        api_base = settings.AZURE_OPENAI_API_BASE
-        if api_base:
-            try:
-                # Sanitize the URL to remove any invalid or non-printable characters
-                # Remove any whitespace and control characters
-                api_base = ''.join(c for c in api_base if c.isprintable() and not c.isspace())
-                
-                # Remove trailing slash if present
-                api_base = api_base.rstrip('/')
-                
-                # Ensure it has a proper URL scheme
-                if not api_base.startswith(('http://', 'https://')):
-                    api_base = f"https://{api_base}"
-                    
-                # Additional validation - make sure it's ASCII-only to avoid encoding issues
-                api_base = api_base.encode('ascii', errors='ignore').decode('ascii')
-                    
-                logger.info(f"Using API base URL: {api_base}")
-            except Exception as e:
-                logger.error(f"Error sanitizing API base URL: {str(e)}")
-                logger.error(traceback.format_exc())
-                raise ValueError(f"Invalid Azure OpenAI API Base URL: {api_base}")
-        else:
-            logger.error("AZURE_OPENAI_API_BASE environment variable is not set!")
-            raise ValueError("AZURE_OPENAI_API_BASE environment variable is not set")
+        # Determine which LLM provider to use
+        self.provider = os.getenv("LLM_PROVIDER", "azure").lower()
         
+        if self.provider == "azure":
+            self._init_azure_openai()
+        else:
+            self._init_openai()
+            
+    def _init_azure_openai(self):
+        """Initialize Azure OpenAI client"""
         try:
+            from openai import AzureOpenAI
+            
+            # Check if required Azure OpenAI environment variables are set
+            api_base = settings.AZURE_OPENAI_API_BASE
+            api_key = settings.AZURE_OPENAI_API_KEY
+            api_version = settings.AZURE_OPENAI_API_VERSION
+            deployment_name = settings.AZURE_OPENAI_DEPLOYMENT_NAME
+            
+            if not all([api_base, api_key, api_version, deployment_name]):
+                logger.warning("Missing required Azure OpenAI environment variables. Falling back to OpenAI.")
+                self._init_openai()
+                return
+            
+            # Sanitize the API base URL
+            if api_base:
+                try:
+                    # Remove any whitespace and control characters
+                    api_base = ''.join(c for c in api_base if c.isprintable() and not c.isspace())
+                    
+                    # Remove trailing slash if present
+                    api_base = api_base.rstrip('/')
+                    
+                    # Ensure it has a proper URL scheme
+                    if not api_base.startswith(('http://', 'https://')):
+                        api_base = f"https://{api_base}"
+                        
+                    # Additional validation - make sure it's ASCII-only to avoid encoding issues
+                    api_base = api_base.encode('ascii', errors='ignore').decode('ascii')
+                        
+                    logger.info(f"Using API base URL: {api_base}")
+                except Exception as e:
+                    logger.error(f"Error sanitizing API base URL: {str(e)}")
+                    logger.error(traceback.format_exc())
+                    self._init_openai()
+                    return
+            
             # Initialize the Azure OpenAI client
             self.client = AzureOpenAI(
-                api_key=settings.AZURE_OPENAI_API_KEY,
-                api_version=settings.AZURE_OPENAI_API_VERSION,
+                api_key=api_key,
+                api_version=api_version,
                 azure_endpoint=api_base
             )
             
-            self.deployment_name = settings.AZURE_OPENAI_DEPLOYMENT_NAME
+            self.deployment_name = deployment_name
+            self.provider = "azure"
             
-            # Log API configuration
-            logger.info(f"API version: {settings.AZURE_OPENAI_API_VERSION}")
-            logger.info(f"Deployment name: {self.deployment_name}")
+            # Log successful Azure OpenAI initialization
+            logger.info(f"Successfully initialized Azure OpenAI client with deployment: {self.deployment_name}")
             
-            # Check if API key is set
-            if not settings.AZURE_OPENAI_API_KEY:
-                logger.warning("AZURE_OPENAI_API_KEY is not set!")
         except Exception as e:
             logger.error(f"Error initializing Azure OpenAI client: {str(e)}")
             logger.error(traceback.format_exc())
+            logger.info("Falling back to regular OpenAI...")
+            self._init_openai()
+    
+    def _init_openai(self):
+        """Initialize regular OpenAI client as fallback"""
+        try:
+            from openai import OpenAI
+            
+            # Check if OpenAI API key is set
+            api_key = os.getenv("OPENAI_API_KEY")
+            if not api_key:
+                logger.error("OPENAI_API_KEY is not set. Cannot initialize OpenAI client.")
+                raise ValueError("Missing OpenAI API key. Please set OPENAI_API_KEY environment variable.")
+            
+            # Initialize the regular OpenAI client
+            self.client = OpenAI(
+                api_key=api_key
+            )
+            
+            # Use gpt-4 as the default model
+            self.deployment_name = os.getenv("OPENAI_MODEL", "gpt-4")
+            self.provider = "openai"
+            
+            logger.info(f"Successfully initialized regular OpenAI client with model: {self.deployment_name}")
+            
+        except Exception as e:
+            logger.error(f"Error initializing OpenAI client: {str(e)}")
+            logger.error(traceback.format_exc())
             raise
-        
+    
     async def detect_mcq_intent(self, user_query: str) -> Dict[str, Any]:
         """Detect if the user is asking for MCQs and extract the topic"""
         logger.debug(f"Detecting MCQ intent for query: {user_query[:50]}...")
@@ -73,16 +120,29 @@ class LLMService:
             system_prompt = load_prompt("detect_mcq_intent/system.txt")
             user_prompt = load_prompt("detect_mcq_intent/prompt.txt").format(user_query=user_query)
             
-            logger.debug("Calling Azure OpenAI API for MCQ intent detection")
-            response = self.client.chat.completions.create(
-                model=self.deployment_name,
-                messages=[
-                    {"role": "system", "content": system_prompt},
-                    {"role": "user", "content": user_prompt}
-                ],
-                temperature=0.1,  # Lower temperature for more deterministic responses
-                max_tokens=200
-            )
+            logger.debug(f"Using {self.provider} for MCQ intent detection")
+            
+            if self.provider == "azure":
+                response = self.client.chat.completions.create(
+                    model=self.deployment_name,
+                    messages=[
+                        {"role": "system", "content": system_prompt},
+                        {"role": "user", "content": user_prompt}
+                    ],
+                    temperature=0.1,  # Lower temperature for more deterministic responses
+                    max_tokens=200
+                )
+            else:
+                # Regular OpenAI client
+                response = self.client.chat.completions.create(
+                    model=self.deployment_name,
+                    messages=[
+                        {"role": "system", "content": system_prompt},
+                        {"role": "user", "content": user_prompt}
+                    ],
+                    temperature=0.1,
+                    max_tokens=200
+                )
             
             # Get the raw content from the response
             content = response.choices[0].message.content
@@ -182,16 +242,29 @@ class LLMService:
             system_prompt = load_prompt("simple_request/system.txt")
             user_prompt = load_prompt("simple_request/prompt.txt").format(user_query=user_query)
             
-            logger.debug("Calling Azure OpenAI API")
-            response = self.client.chat.completions.create(
-                model=self.deployment_name,
-                messages=[
-                    {"role": "system", "content": system_prompt},
-                    {"role": "user", "content": user_prompt}
-                ],
-                temperature=0.7,
-                max_tokens=800,
-            )
+            logger.debug(f"Using {self.provider} for generating response")
+            
+            if self.provider == "azure":
+                response = self.client.chat.completions.create(
+                    model=self.deployment_name,
+                    messages=[
+                        {"role": "system", "content": system_prompt},
+                        {"role": "user", "content": user_prompt}
+                    ],
+                    temperature=0.7,
+                    max_tokens=800,
+                )
+            else:
+                # Regular OpenAI client
+                response = self.client.chat.completions.create(
+                    model=self.deployment_name,
+                    messages=[
+                        {"role": "system", "content": system_prompt},
+                        {"role": "user", "content": user_prompt}
+                    ],
+                    temperature=0.7,
+                    max_tokens=800,
+                )
             
             logger.debug("Processing API response")
             content = response.choices[0].message.content
@@ -218,16 +291,29 @@ class LLMService:
             logger.debug(f"System prompt (first 50 chars): {system_prompt[:50]}...")
             logger.debug(f"User prompt (first 50 chars): {user_prompt[:50]}...")
             
-            logger.debug("Calling Azure OpenAI API for MCQ generation")
-            response = self.client.chat.completions.create(
-                model=self.deployment_name,
-                messages=[
-                    {"role": "system", "content": system_prompt},
-                    {"role": "user", "content": user_prompt}
-                ],
-                temperature=0.7,
-                max_tokens=2000
-            )
+            logger.debug(f"Using {self.provider} for MCQ generation")
+            
+            if self.provider == "azure":
+                response = self.client.chat.completions.create(
+                    model=self.deployment_name,
+                    messages=[
+                        {"role": "system", "content": system_prompt},
+                        {"role": "user", "content": user_prompt}
+                    ],
+                    temperature=0.7,
+                    max_tokens=2000
+                )
+            else:
+                # Regular OpenAI client
+                response = self.client.chat.completions.create(
+                    model=self.deployment_name,
+                    messages=[
+                        {"role": "system", "content": system_prompt},
+                        {"role": "user", "content": user_prompt}
+                    ],
+                    temperature=0.7,
+                    max_tokens=2000
+                )
             
             # Parse the JSON response
             logger.debug("Processing API response for MCQ generation")
