@@ -1,9 +1,10 @@
 User message: "{user_query}"
 
 Determine if the user is asking for multiple-choice questions (MCQs) or a quiz.
-If they are, extract the topic they want MCQs on.
+If they are, extract the topic they want MCQs on and the number of questions they want.
 
 Respond ONLY with valid YAML in this format:
 response:
   mcq_expected: true_or_false
   topic: extracted_topic_or_empty_if_not_mcq_request
+  num_questions: number_of_questions_or_4_if_not_specified

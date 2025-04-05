@@ -7,7 +7,10 @@ Examples of requests for MCQs:
 - "I want quiz questions on AI"
 - "Can you make a few MCQs on machine learning?"
 - "Show me some test questions about biology"
+- "Give me 5 questions about history"
+- "Create 3 multiple choice questions on science"
 
 Response ONLY in valid YAML format with the following structure:
 mcq_expected: true_or_false
 topic: extracted_topic_or_empty_if_not_mcq_request
+num_questions: number_of_questions_or_4_if_not_specified

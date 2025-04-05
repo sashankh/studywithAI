@@ -1,53 +1,67 @@
 from fastapi import APIRouter, HTTPException
 from fastapi.responses import JSONResponse
 from app.models.chat import ChatRequest, ChatResponse
+from app.models.mcq import MCQResponse
 from app.services.llm import llm_service
 import logging
 import traceback
 
 logger = logging.getLogger(__name__)
-router = APIRouter()
+# Define router with a prefix tag
+router = APIRouter(tags=["chat"])
 
-@router.post("/chat", response_model=ChatResponse)
+@router.post("/chat", response_model=None)
 async def process_chat(request: ChatRequest):
-    """Process a chat message and return a response"""
+    """Process a chat message and return a response or MCQs"""
     try:
         logger.debug(f"Received chat request: {request}")
         user_query = request.message
-        
-        # First response - "Thinking..."
-        thinking_response = ChatResponse(
-            message="Thinking...",
-            message_type="status",  # New type for status messages
-            requires_mcq=False
-        )
         
         # Use LLM to detect MCQ intent
         logger.debug("Using LLM to detect if request is for MCQs")
         intent_result = await llm_service.detect_mcq_intent(user_query)
         
-        if (intent_result["mcq_expected"] or intent_result["mcq_expected"] == 'true'): # and intent_result["topic"]:
+        if (intent_result["mcq_expected"] or intent_result["mcq_expected"] == 'true'):
             topic = intent_result["topic"]
             logger.info(f"MCQ request detected for topic: {topic}")
             
-            # Second response - "Generating questions..."
-            generating_response = ChatResponse(
-                message=f"Generating questions on topic {topic}...",
-                message_type="status",
-                requires_mcq=True,
-                mcq_topic=topic
-            )
+            # Get number of questions from intent response
+            num_questions = 4  # Default
+            if "num_questions" in intent_result:
+                try:
+                    extracted_num = int(intent_result["num_questions"])
+                    # Limit to a reasonable range
+                    num_questions = max(1, min(extracted_num, 10))
+                    logger.debug(f"Extracted request for {num_questions} questions from intent detection")
+                except (ValueError, TypeError):
+                    logger.debug(f"Could not convert num_questions to int: {intent_result['num_questions']}, using default")
             
-            # This will be handled by the mcq router, return a message to redirect
-            response_data = ChatResponse(
-                message=f"I'll generate some MCQs for you on {topic}.",
-                message_type="text",
-                requires_mcq=True,
-                mcq_topic=topic
-            )
-            
-            # Return with explicit CORS headers
-            return create_cors_response(response_data.dict())
+            try:
+                # Generate MCQs directly
+                questions = await llm_service.generate_mcqs(
+                    topic=topic,
+                    num_questions=num_questions
+                )
+                
+                response_data = MCQResponse(
+                    topic=topic,
+                    questions=questions
+                )
+                
+                # Return with explicit CORS headers
+                return create_cors_response(response_data.dict())
+                
+            except Exception as e:
+                logger.error(f"Error generating MCQs: {str(e)}")
+                logger.exception("Full exception traceback:")
+                
+                # Fallback to a text response
+                response_data = ChatResponse(
+                    message=f"I'm sorry, I had trouble generating MCQs on {topic}. {str(e)}",
+                    message_type="text",
+                    requires_mcq=False
+                )
+                return create_cors_response(response_data.dict())
         
         # For regular chat messages
         logger.debug("Processing regular chat message")

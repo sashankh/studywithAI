@@ -56,34 +56,6 @@ const App: React.FC = () => {
     setError(null);
   };
 
-  // Check if a message contains an MCQ request
-  const isMCQRequest = (message: string): boolean => {
-    const mcqPatterns = [
-      /generate.*mcqs?/i,
-      /create.*mcqs?/i,
-      /make.*mcqs?/i,
-      /multiple choice questions?/i,
-      /quiz/i,
-      /test me/i,
-    ];
-    return mcqPatterns.some(pattern => pattern.test(message));
-  };
-
-  // Extract topic from MCQ request
-  const extractTopicFromMCQRequest = (message: string): string => {
-    const match = message.match(/(?:on|about|for|regarding)\s+(.+?)(?:\s+with|\s+having|\s+containing|\s*$)/i);
-    if (match && match[1]) {
-      return match[1].trim();
-    }
-    
-    const fallbackMatch = message.match(/(?:mcqs?|quiz|multiple choice questions?)\s+(?:on|about|for|regarding)?\s*(.+)/i);
-    if (fallbackMatch && fallbackMatch[1]) {
-      return fallbackMatch[1].trim();
-    }
-    
-    return 'General Knowledge';
-  };
-
   // Transform backend MCQ data to match frontend expected format
   const transformMCQData = (backendData: any): MCQQuiz => {
     console.log('Transforming MCQ data:', backendData);
@@ -151,51 +123,44 @@ const App: React.FC = () => {
         return session;
       })
     );
+    
+    // We're removing the temporary "Thinking..." message since the ChatPanel component
+    // already shows a ThinkingIndicator when isLoading is true
 
     try {
-      if (isMCQRequest(content)) {
-        const topic = extractTopicFromMCQRequest(content);
-        
-        try {
-          // Request MCQs from the API
-          const mcqResponse = await requestMCQs(topic);
-          console.log('Raw MCQ response:', mcqResponse);
-          
-          const formattedQuiz = transformMCQData(mcqResponse);
-          
-          // Create assistant message with MCQ data
-          const assistantMessage: MCQMessage = {
-            id: uuidv4(),
-            role: 'assistant',
-            content: `Here are some multiple choice questions on ${topic}:`,
-            timestamp: new Date(),
-            mcqQuiz: formattedQuiz
-          };
-          
-          // Update sessions with assistant response
-          setSessions(prevSessions => 
-            prevSessions.map(session => {
-              if (session.id === currentSessionId) {
-                return {
-                  ...session,
-                  messages: [
-                    ...session.messages,
-                    assistantMessage
-                  ],
-                };
-              }
-              return session;
-            })
-          );
-        } catch (error) {
-          console.error('Error processing MCQs:', error);
-          throw error;
-        }
-      } else {
-        // Send message to the API and get a response
-        const response = await sendMessage(content);
+      // Send message to the API and get a response - this now handles both chat and MCQ responses
+      const response = await sendMessage(content);
 
-        // Create a response message
+      if (response.isMCQ) {
+        // Handle MCQ response
+        const formattedQuiz = transformMCQData(response.mcqData);
+        
+        // Create assistant message with MCQ data
+        const assistantMessage: MCQMessage = {
+          id: uuidv4(),
+          role: 'assistant',
+          content: `Here are some multiple choice questions on ${formattedQuiz.topic}:`,
+          timestamp: new Date(),
+          mcqQuiz: formattedQuiz
+        };
+        
+        // Update sessions with assistant response
+        setSessions(prevSessions => 
+          prevSessions.map(session => {
+            if (session.id === currentSessionId) {
+              return {
+                ...session,
+                messages: [
+                  ...session.messages,
+                  assistantMessage
+                ],
+              };
+            }
+            return session;
+          })
+        );
+      } else {
+        // Handle regular chat response
         const assistantMessage: Message = {
           id: uuidv4(),
           role: 'assistant',

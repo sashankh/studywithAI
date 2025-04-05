@@ -2,10 +2,10 @@ import { Message, MCQQuiz, MCQEvaluation, MCQSubmission } from '../types';
 
 // Dynamic backend URL resolution
 const determineApiUrl = () => {
-  // For local development, use relative path to local backend
+  // For local development, explicitly use the backend server URL
   if (window.location.hostname === 'localhost') {
-    console.log('Using local backend API');
-    return '/api';
+    console.log('Using local backend API server at localhost:8000');
+    return 'http://localhost:8000/api';
   }
   
   // Check for build-time environment variable (for production)
@@ -23,15 +23,16 @@ const determineApiUrl = () => {
   }
   
   // Fallback to a default path
-  return '/api';
+  return 'http://localhost:8000/api';
 };
 
 // Use dynamic API URL resolution
 const API_URL = determineApiUrl();
 console.log('Using API URL:', API_URL);
 
-export async function sendMessage(message: string): Promise<Message> {
+export async function sendMessage(message: string): Promise<any> {
   try {
+    // Make sure we're using the full path to the chat endpoint
     console.log(`Sending message to ${API_URL}/chat:`, message);
     const response = await fetch(`${API_URL}/chat`, {
       method: 'POST',
@@ -48,7 +49,21 @@ export async function sendMessage(message: string): Promise<Message> {
     
     const data = await response.json();
     console.log('Received response:', data);
-    return data;
+    
+    // Check if the response is an MCQ quiz (by looking for typical MCQ fields)
+    if (data.questions && data.topic) {
+      console.log('MCQ response detected');
+      return {
+        isMCQ: true,
+        mcqData: data
+      };
+    }
+    
+    // Regular chat response
+    return {
+      isMCQ: false,
+      content: data.message
+    };
   } catch (error) {
     console.error('Error sending message:', error);
     throw error;

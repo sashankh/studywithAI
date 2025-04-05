@@ -180,6 +180,7 @@ class LLMService:
                     lines = cleaned_content.strip().split("\n")
                     mcq_expected = False
                     topic = ""
+                    num_questions = 4  # Default to 4 questions
                     
                     for line in lines:
                         line = line.strip()
@@ -193,11 +194,20 @@ class LLMService:
                                 topic = topic[1:-1]
                             elif topic.startswith("'") and topic.endswith("'"):
                                 topic = topic[1:-1]
+                        elif line.startswith("num_questions:"):
+                            try:
+                                num_str = line.split("num_questions:")[1].strip()
+                                # Try to convert to integer
+                                num_questions = int(num_str)
+                            except (ValueError, TypeError):
+                                # Keep default if conversion fails
+                                logger.debug(f"Could not convert num_questions to int: {num_str}, using default")
                     
-                    logger.debug(f"Manual parsing result: mcq_expected={mcq_expected}, topic={topic}")
+                    logger.debug(f"Manual parsing result: mcq_expected={mcq_expected}, topic={topic}, num_questions={num_questions}")
                     return {
                         "mcq_expected": mcq_expected, 
-                        "topic": topic
+                        "topic": topic,
+                        "num_questions": num_questions
                     }
                 else:
                     # If can't manually parse, try using PyYAML
@@ -211,7 +221,8 @@ class LLMService:
                         
                     return {
                         "mcq_expected": mcq_expected,
-                        "topic": result.get("topic", "")
+                        "topic": result.get("topic", ""),
+                        "num_questions": result.get("num_questions", 4)
                     }
             except Exception as yaml_error:
                 logger.error(f"Error parsing YAML response: {str(yaml_error)}")
@@ -222,16 +233,16 @@ class LLMService:
                     potential_topics = re.findall(r"topic:\s*([A-Za-z0-9 ]+)", content)
                     topic = potential_topics[0] if potential_topics else ""
                     logger.debug(f"Hard-coded detection: topic={topic}")
-                    return {"mcq_expected": True, "topic": topic}
+                    return {"mcq_expected": True, "topic": topic, "num_questions": 4}
                     
             # Default to no MCQ intent if all parsing methods fail
-            return {"mcq_expected": False, "topic": ""}
+            return {"mcq_expected": False, "topic": "", "num_questions": 4}
             
         except Exception as e:
             logger.error(f"Error detecting MCQ intent: {str(e)}")
             logger.error(traceback.format_exc())
             # Return default response in case of error
-            return {"mcq_expected": False, "topic": ""}
+            return {"mcq_expected": False, "topic": "", "num_questions": 4}
     
     async def generate_response(self, user_query: str) -> str:
         """Generate a simple response to user query"""

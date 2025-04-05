@@ -140,6 +140,17 @@ if ($LASTEXITCODE -eq 0) {
     exit 1
 }
 
+# After backend deployment, update vite.config.ts with the backend URL
+Write-Host "Updating vite.config.ts with backend URL..." -ForegroundColor Cyan
+$viteConfigPath = "../frontend/vite.config.ts"
+
+if (Test-Path $viteConfigPath) {
+    (Get-Content $viteConfigPath) -replace 'http://localhost:9000', '$backendUrl' | Set-Content $viteConfigPath
+    Write-Host "vite.config.ts updated successfully with backend URL: $backendUrl" -ForegroundColor Green
+} else {
+    Write-Host "vite.config.ts not found at $viteConfigPath. Skipping update." -ForegroundColor Yellow
+}
+
 # Deploy the frontend
 Write-Host "`nDeploying frontend to Vercel..." -ForegroundColor Cyan
 Set-Location -Path "../frontend"
